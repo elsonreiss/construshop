@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: construshop_db
+    environment:
+      POSTGRES_DB: construshop
+      POSTGRES_USER: construshop_user
+      POSTGRES_PASSWORD: secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U construshop_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  construshop:
+    build: .
+    container_name: construshop_app
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/construshop
+      SPRING_DATASOURCE_USERNAME: construshop_user
+      SPRING_DATASOURCE_PASSWORD: secure_password
+      SPRING_PROFILES_ACTIVE: prod
+      DB_USERNAME: construshop_user
+      DB_PASSWORD: secure_password
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
